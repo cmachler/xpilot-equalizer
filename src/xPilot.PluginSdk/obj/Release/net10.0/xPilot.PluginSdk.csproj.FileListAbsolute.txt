@@ -1,0 +1,11 @@
+D:\development\x-pilot-equalizer\src\xPilot.PluginSdk\bin\Release\net10.0\xPilot.PluginSdk.deps.json
+D:\development\x-pilot-equalizer\src\xPilot.PluginSdk\bin\Release\net10.0\xPilot.PluginSdk.dll
+D:\development\x-pilot-equalizer\src\xPilot.PluginSdk\bin\Release\net10.0\xPilot.PluginSdk.xml
+D:\development\x-pilot-equalizer\src\xPilot.PluginSdk\obj\Release\net10.0\xPilot.PluginSdk.GeneratedMSBuildEditorConfig.editorconfig
+D:\development\x-pilot-equalizer\src\xPilot.PluginSdk\obj\Release\net10.0\xPilot.PluginSdk.AssemblyInfoInputs.cache
+D:\development\x-pilot-equalizer\src\xPilot.PluginSdk\obj\Release\net10.0\xPilot.PluginSdk.AssemblyInfo.cs
+D:\development\x-pilot-equalizer\src\xPilot.PluginSdk\obj\Release\net10.0\xPilot.PluginSdk.csproj.CoreCompileInputs.cache
+D:\development\x-pilot-equalizer\src\xPilot.PluginSdk\obj\Release\net10.0\xPilot.PluginSdk.dll
+D:\development\x-pilot-equalizer\src\xPilot.PluginSdk\obj\Release\net10.0\refint\xPilot.PluginSdk.dll
+D:\development\x-pilot-equalizer\src\xPilot.PluginSdk\obj\Release\net10.0\xPilot.PluginSdk.xml
+D:\development\x-pilot-equalizer\src\xPilot.PluginSdk\obj\Release\net10.0\ref\xPilot.PluginSdk.dll

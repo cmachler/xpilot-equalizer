@@ -1,0 +1,780 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>xPilot.PluginSdk</name>
+    </assembly>
+    <members>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs">
+            <summary>
+            Arguments for the AircraftAdded event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs.Callsign">
+            <summary>
+            Gets the aircraft callsign.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs.TypeCode">
+            <summary>
+            Gets the aircraft type code.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs.Latitude">
+            <summary>
+            Gets the aircraft latitude.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs.Longitude">
+            <summary>
+            Gets the aircraft longitude.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs.Altitude">
+            <summary>
+            Gets the aircraft altitude.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs.PressureAltitude">
+            <summary>
+            Gets the aircraft's pressure altitude.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs.Pitch">
+            <summary>
+            Gets the aircraft pitch.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs.Bank">
+            <summary>
+            Gets the aircraft bank.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs.Heading">
+            <summary>
+            Gets the aircraft heading.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs.Speed">
+            <summary>
+            Gets the aircraft ground speed.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs.#ctor(System.String,System.String,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.AircraftAddedEventArgs"/> class.
+            </summary>
+            <param name="callsign">The aircraft callsign.</param>
+            <param name="typeCode">The aircraft type code.</param>
+            <param name="lat">The aircraft latitude.</param>
+            <param name="lon">The aircraft longitude.</param>
+            <param name="alt">The aircraft altitude.</param>
+            <param name="pressureAlt">The aircraft's pressure altitude.</param>
+            <param name="pitch">The aircraft pitch.</param>
+            <param name="bank">The aircraft bank.</param>
+            <param name="heading">The aircraft heading.</param>
+            <param name="speed">The aircraft ground speed.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.AircraftDeletedEventArgs">
+            <summary>
+            Arguments for the AircraftDeleted event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftDeletedEventArgs.Callsign">
+            <summary>
+            Gets the aircraft callsign.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.AircraftDeletedEventArgs.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.AircraftDeletedEventArgs"/> class.
+            </summary>
+            <param name="callsign">The aircraft callsign.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs">
+            <summary>
+            Arguments for the AircraftUpdated event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs.Callsign">
+            <summary>
+            Gets the aircraft callsign.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs.Latitude">
+            <summary>
+            Gets the aircraft latitude.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs.Longitude">
+            <summary>
+            Gets the aircraft longitude.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs.Altitude">
+            <summary>
+            Gets the aircraft altitude.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs.PressureAltitude">
+            <summary>
+            Gets the aircraft's pressure altitude.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs.Pitch">
+            <summary>
+            Gets the aircraft pitch.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs.Bank">
+            <summary>
+            Gets the aircraft bank.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs.Heading">
+            <summary>
+            Gets the aircraft heading.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs.Speed">
+            <summary>
+            Gets the aircraft ground speed.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs.#ctor(System.String,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.AircraftUpdatedEventArgs"/> class.
+            </summary>
+            <param name="callsign">The aircraft callsign.</param>
+            <param name="lat">The aircraft latitude.</param>
+            <param name="lon">The aircraft longitude.</param>
+            <param name="alt">The aircraft altitude.</param>
+            <param name="pressureAlt">The aircraft's pressure altitude.</param>
+            <param name="pitch">The aircraft pitch.</param>
+            <param name="bank">The aircraft bank.</param>
+            <param name="heading">The aircraft heading.</param>
+            <param name="speed">The aircraft ground speed.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.AtisReceivedEventArgs">
+            <summary>
+            Arguments for the AtisReceived event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AtisReceivedEventArgs.From">
+            <summary>
+            Gets the sender's callsign.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.AtisReceivedEventArgs.Lines">
+            <summary>
+            Gets the ATIS lines.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.AtisReceivedEventArgs.#ctor(System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.AtisReceivedEventArgs"/> class.
+            </summary>
+            <param name="from">The sender's callsign.</param>
+            <param name="lines">The ATIS lines.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.BroadcastMessageReceivedEventArgs">
+            <summary>
+            Arguments for the BroadcastMessageReceived event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.BroadcastMessageReceivedEventArgs.From">
+            <summary>
+            Gets the sender's callsign.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.BroadcastMessageReceivedEventArgs.Message">
+            <summary>
+            Gets the message contents.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.BroadcastMessageReceivedEventArgs.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.BroadcastMessageReceivedEventArgs"/> class.
+            </summary>
+            <param name="from">The sender's callsign.</param>
+            <param name="message">The message contents.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.ControllerAddedEventArgs">
+            <summary>
+            Arguments for the ControllerAdded event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.ControllerAddedEventArgs.Callsign">
+            <summary>
+            Gets the controller's callsign.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.ControllerAddedEventArgs.Frequency">
+            <summary>
+            Gets the controller's primary frequency, in Hz.
+            Example: <c>123725000</c> represents 123.725 MHz.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.ControllerAddedEventArgs.Latitude">
+            <summary>
+            Gets the controller's latitude.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.ControllerAddedEventArgs.Longitude">
+            <summary>
+            Gets the controller's longitude.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.ControllerAddedEventArgs.#ctor(System.String,System.Int32,System.Double,System.Double)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.ControllerAddedEventArgs"/> class.
+            </summary>
+            <param name="callsign">The controller's callsign.</param>
+            <param name="frequency">The controller's primary frequency, in Hz.</param>
+            <param name="latitude">The controller's latitude.</param>
+            <param name="longitude">The controller's longitude.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.ControllerDeletedEventArgs">
+            <summary>
+            Arguments for the ControllerDeleted event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.ControllerDeletedEventArgs.Callsign">
+            <summary>
+            Gets the controller's callsign.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.ControllerDeletedEventArgs.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.ControllerDeletedEventArgs"/> class.
+            </summary>
+            <param name="callsign">The controller's callsign.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.ControllerFrequencyChangedEventArgs">
+            <summary>
+            Arguments for the ControllerFrequencyChanged event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.ControllerFrequencyChangedEventArgs.Callsign">
+            <summary>
+            Gets the controller's callsign.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.ControllerFrequencyChangedEventArgs.NewFrequency">
+            <summary>
+            Gets the controller's new primary frequency, in Hz.
+            Example: <c>123725000</c> represents 123.725 MHz.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.ControllerFrequencyChangedEventArgs.#ctor(System.String,System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.ControllerFrequencyChangedEventArgs"/> class.
+            </summary>
+            <param name="callsign">The controller's callsign.</param>
+            <param name="newFrequency">The controller's new primary frequency, in Hz.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.ControllerLocationChangedEventArgs">
+            <summary>
+            Arguments for the ControllerLocationChanged event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.ControllerLocationChangedEventArgs.Callsign">
+            <summary>
+            Gets the controller's callsign.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.ControllerLocationChangedEventArgs.NewLatitude">
+            <summary>
+            Gets the controller's new latitude.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.ControllerLocationChangedEventArgs.NewLongitude">
+            <summary>
+            Gets the controller's new longitude.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.ControllerLocationChangedEventArgs.#ctor(System.String,System.Double,System.Double)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.ControllerLocationChangedEventArgs"/> class.
+            </summary>
+            <param name="callsign">The controller's callsign.</param>
+            <param name="newLatitude">The controller's new latitude.</param>
+            <param name="newLongitude">The controller's new longitude.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.MetarReceivedEventArgs">
+            <summary>
+            Arguments for the MetarReceived event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.MetarReceivedEventArgs.Metar">
+            <summary>
+            Gets the full raw METAR.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.MetarReceivedEventArgs.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.MetarReceivedEventArgs"/> class.
+            </summary>
+            <param name="metar">The full raw METAR.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.NetworkConnectedEventArgs">
+            <summary>
+            Arguments for the NetworkConnected event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.NetworkConnectedEventArgs.Cid">
+            <summary>
+            Gets the user's CID.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.NetworkConnectedEventArgs.Callsign">
+            <summary>
+            Gets the callsign specified for the connection.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.NetworkConnectedEventArgs.TypeCode">
+            <summary>
+            Gets the aircraft type code specified for the connection.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.NetworkConnectedEventArgs.SelcalCode">
+            <summary>
+            Gets the SELCAL code specified for the connection, if any.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.NetworkConnectedEventArgs.ObserverMode">
+            <summary>
+            Gets a value indicating whether the connection is in observer mode.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.NetworkConnectedEventArgs.#ctor(System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.NetworkConnectedEventArgs"/> class.
+            </summary>
+            <param name="cid">The user's CID.</param>
+            <param name="callsign">The callsign specified for the connection.</param>
+            <param name="typeCode">The aircraft type code specified for the connection.</param>
+            <param name="selcalCode">The SELCAL code specified for the connection, if any.</param>
+            <param name="observerMode">Whether or not the connection is in observer mode.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.PrivateMessageReceivedEventArgs">
+            <summary>
+            Arguments for the PrivateMessageReceived event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.PrivateMessageReceivedEventArgs.From">
+            <summary>
+            Gets the sender's callsign.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.PrivateMessageReceivedEventArgs.Message">
+            <summary>
+            Gets the message contents.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.PrivateMessageReceivedEventArgs.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.PrivateMessageReceivedEventArgs"/> class.
+            </summary>
+            <param name="from">The sender's callsign.</param>
+            <param name="message">The message contents.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.PrivateMessageSentEventArgs">
+            <summary>
+            Arguments for the PrivateMessageSent event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.PrivateMessageSentEventArgs.To">
+            <summary>
+            Gets the recipient's callsign.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.PrivateMessageSentEventArgs.Message">
+            <summary>
+            Gets the message contents.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.PrivateMessageSentEventArgs.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.PrivateMessageSentEventArgs"/> class.
+            </summary>
+            <param name="to">The recipient's callsign.</param>
+            <param name="message">The message contents.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.RadioMessageReceivedEventArgs">
+            <summary>
+            Arguments for the RadioMessageReceived event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.RadioMessageReceivedEventArgs.Frequencies">
+            <summary>
+            Gets the list of frequencies the message was transmitted on, in Hz.
+            Example: <c>123725000</c> represents 123.725 MHz.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.RadioMessageReceivedEventArgs.From">
+            <summary>
+            Gets the sender's callsign.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.RadioMessageReceivedEventArgs.Message">
+            <summary>
+            Gets the message contents.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.RadioMessageReceivedEventArgs.#ctor(System.Int32[],System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.RadioMessageReceivedEventArgs"/> class.
+            </summary>
+            <param name="frequencies">The list of frequencies the message was transmitted on, in Hz.</param>
+            <param name="from">The sender's callsign.</param>
+            <param name="message">The message contents.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.RadioMessageSentEventArgs">
+            <summary>
+            Arguments for the RadioMessageSent event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.RadioMessageSentEventArgs.Message">
+            <summary>
+            Gets the message contents.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.RadioMessageSentEventArgs.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.RadioMessageSentEventArgs"/> class.
+            </summary>
+            <param name="message">The message contents.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.SelcalAlertReceivedEventArgs">
+            <summary>
+            Arguments for the SelcalAlertReceived event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.SelcalAlertReceivedEventArgs.Frequencies">
+            <summary>
+            Gets the frequencies on which the SELCAL alert was received, in Hz.
+            Example: <c>123725000</c> represents 123.725 MHz.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.SelcalAlertReceivedEventArgs.From">
+            <summary>
+            Gets the callsign for the controller that sent the SELCAL alert.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.SelcalAlertReceivedEventArgs.#ctor(System.Int32[],System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.SelcalAlertReceivedEventArgs"/> class.
+            </summary>
+            <param name="frequencies">The frequencies on which the alert was received, in Hz.</param>
+            <param name="from">The callsign for the controller that sent the SELCAL alert.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Events.ServerMessageReceivedEventArgs">
+            <summary>
+            Arguments for the ServerMessageReceived event.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Events.ServerMessageReceivedEventArgs.Message">
+            <summary>
+            Gets the message contents.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Events.ServerMessageReceivedEventArgs.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Events.ServerMessageReceivedEventArgs"/> class.
+            </summary>
+            <param name="message">The message contents.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Exceptions.AlreadyConnectedException">
+            <summary>
+            The exception that is thrown when a connection request is made while xPilot is already connected to the network.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Exceptions.AlreadyConnectedException.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.AlreadyConnectedException"/> class.
+            </summary>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Exceptions.NotConnectedException">
+            <summary>
+            The exception that is thrown when xPilot is not connected to the network when a request is made which requires a connection.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Exceptions.NotConnectedException.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.NotConnectedException"/> class.
+            </summary>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Exceptions.NotTransmittingException">
+            <summary>
+            The exception that is thrown when neither COM radio is configured for transmit or the avionics power is off,
+            and a request is made to transmit a radio message.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Exceptions.NotTransmittingException.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.NotTransmittingException"/> class.
+            </summary>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Exceptions.SimNotReadyException">
+            <summary>
+            The exception that is thrown when a request is made to connect to the network when xPilot does not have an active connection to the simulator.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Exceptions.SimNotReadyException.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.SimNotReadyException"/> class.
+            </summary>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.IBroker">
+            <summary>
+            The xPilot plugin broker interface. Provides events and methods for interacting with xPilot.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.IBroker.ApiVersion">
+            <summary>
+            Gets the version of the SDK assembly the host was built with. Compare against the
+            version your plugin was built against to detect an incompatible host in <see cref="M:Vatsim.Xpilot.PluginSdk.IPlugin.Initialize(Vatsim.Xpilot.PluginSdk.IBroker)"/>.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.IBroker.IsConnected">
+            <summary>
+            Gets a value indicating whether xPilot is currently connected to the network.
+            Use this at initialization to learn the current state, since <see cref="E:Vatsim.Xpilot.PluginSdk.IBroker.NetworkConnected"/>
+            is only raised on transitions.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.IBroker.Callsign">
+            <summary>
+            Gets the callsign of the current connection, or <see langword="null"/> when not connected.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.SessionEnded">
+            <summary>
+            Raised when the xPilot window is about to close.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.NetworkConnected">
+            <summary>
+            Raised when a connection to the VATSIM network has been established.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.NetworkDisconnected">
+            <summary>
+            Raised when the VATSIM network connection has been closed.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.PrivateMessageReceived">
+            <summary>
+            Raised when a private message arrives.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.ServerMessageReceived">
+            <summary>
+            Raised when the network server itself sends a text message. These are not private messages from another
+            user, so they are not delivered through <see cref="E:Vatsim.Xpilot.PluginSdk.IBroker.PrivateMessageReceived"/>.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.RadioMessageReceived">
+            <summary>
+            Raised when a text radio message arrives.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.BroadcastMessageReceived">
+            <summary>
+            Raised when a broadcast message arrives.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.RadioMessageSent">
+            <summary>
+            Raised when a text radio message is sent by the user.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.PrivateMessageSent">
+            <summary>
+            Raised when a private message is sent by the user.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.MetarReceived">
+            <summary>
+            Raised when a METAR is received.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.AtisReceived">
+            <summary>
+            Raised when a text ATIS (a.k.a. 'controller info') is received.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.ControllerAdded">
+            <summary>
+            Raised when a new controller is encountered.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.ControllerDeleted">
+            <summary>
+            Raised when a controller is deleted.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.ControllerFrequencyChanged">
+            <summary>
+            Raised when a controller changes to a new primary frequency.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.ControllerLocationChanged">
+            <summary>
+            Raised when a controller moves to a new location.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.SelcalAlertReceived">
+            <summary>
+            Raised when a SELCAL alert is received.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.AircraftAdded">
+            <summary>
+            Raised when an aircraft is added to the simulator session.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.AircraftUpdated">
+            <summary>
+            Raised when an aircraft position is updated.
+            </summary>
+        </member>
+        <member name="E:Vatsim.Xpilot.PluginSdk.IBroker.AircraftDeleted">
+            <summary>
+            Raised when an aircraft is deleted from the simulator session.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IBroker.GetControllers">
+            <summary>
+            Gets a snapshot of the controllers xPilot is currently tracking. Safe to call from any thread.
+            </summary>
+            <remarks>
+            Tracking starts when xPilot starts and is reset on disconnect, so the snapshot matches the controller
+            set xPilot has seen for the current connection no matter when the plugin loads or calls this.
+            A controller is included from its first position update until its delete message.
+            </remarks>
+            <returns>A copy of the current controller set; empty when disconnected.</returns>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IBroker.RequestConnect(System.String,System.String,System.String)">
+            <summary>
+            Request connection to the network as a pilot.
+            </summary>
+            <param name="callsign">The callsign to use for the session. (Required)</param>
+            <param name="typeCode">The ICAO aircraft type code. (Required)</param>
+            <param name="selcalCode">The SELCAL code. (Optional; leave empty or null for none.)</param>
+            <exception cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.AlreadyConnectedException">Thrown when already connected to the network.</exception>
+            <exception cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.SimNotReadyException">Thrown when the simulator is not connected.</exception>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IBroker.RequestConnectAsObserver(System.String)">
+            <summary>
+            Request connection to the network as an observer.
+            </summary>
+            <param name="callsign">The callsign to use for the session. (Required)</param>
+            <exception cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.AlreadyConnectedException">Thrown when already connected to the network.</exception>
+            <exception cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.SimNotReadyException">Thrown when the simulator is not connected.</exception>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IBroker.RequestConnectAsTowerView">
+            <summary>
+            Request connection to the network as a tower view observer.
+            </summary>
+            <exception cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.AlreadyConnectedException">Thrown when already connected to the network.</exception>
+            <exception cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.SimNotReadyException">Thrown when the simulator is not connected.</exception>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IBroker.RequestDisconnect">
+            <summary>
+            Request disconnection from the network.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IBroker.RequestMetar(System.String)">
+            <summary>
+            Request retrieval of METAR for a station.
+            </summary>
+            <param name="station">The station (airport) for which to request the METAR.</param>
+            <exception cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.NotConnectedException">Thrown when not connected to the network.</exception>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IBroker.RequestAtis(System.String)">
+            <summary>
+            Request controller ATIS information.
+            </summary>
+            <param name="callsign">The callsign of the controller.</param>
+            <exception cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.NotConnectedException">Thrown when not connected to the network.</exception>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IBroker.PostDebugMessage(System.String)">
+            <summary>
+            Post a debug message to the xPilot message area.
+            </summary>
+            <param name="message">The message contents.</param>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IBroker.SetModeC(System.Boolean)">
+            <summary>
+            Set mode C on or off.
+            </summary>
+            <param name="modeC">Whether or not to squawk mode C.</param>
+            <exception cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.SimNotReadyException">Thrown when the simulator is not connected.</exception>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IBroker.SquawkIdent">
+            <summary>
+            Squawk ident.
+            </summary>
+            <exception cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.SimNotReadyException">Thrown when the simulator is not connected.</exception>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IBroker.SetPtt(System.Boolean)">
+            <summary>
+            Set Push-To-Talk on or off.
+            </summary>
+            <param name="pressed">Whether or not Push-To-Talk is pressed.</param>
+            <exception cref="T:Vatsim.Xpilot.PluginSdk.Exceptions.NotConnectedException">Thrown when not connected to the network.</exception>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.IPlugin">
+            <summary>
+            The main xPilot plugin interface. Implement this interface in your plugin class.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.IPlugin.Name">
+            <summary>
+            Gets the name of the plugin. Used for logging purposes.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.IPlugin.Initialize(Vatsim.Xpilot.PluginSdk.IBroker)">
+            <summary>
+            Called by xPilot after the plugin is instantiated. Store the broker reference and subscribe to events here.
+            </summary>
+            <param name="broker">An <see cref="T:Vatsim.Xpilot.PluginSdk.IBroker"/> instance for interacting with xPilot.</param>
+        </member>
+        <member name="T:Vatsim.Xpilot.PluginSdk.Models.ControllerInfo">
+            <summary>
+            A point-in-time snapshot of a controller currently tracked by xPilot.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Models.ControllerInfo.Callsign">
+            <summary>
+            Gets the controller's callsign.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Models.ControllerInfo.Frequency">
+            <summary>
+            Gets the controller's primary frequency, in Hz.
+            Example: <c>123725000</c> represents 123.725 MHz.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Models.ControllerInfo.Latitude">
+            <summary>
+            Gets the controller's latitude.
+            </summary>
+        </member>
+        <member name="P:Vatsim.Xpilot.PluginSdk.Models.ControllerInfo.Longitude">
+            <summary>
+            Gets the controller's longitude.
+            </summary>
+        </member>
+        <member name="M:Vatsim.Xpilot.PluginSdk.Models.ControllerInfo.#ctor(System.String,System.Int32,System.Double,System.Double)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Vatsim.Xpilot.PluginSdk.Models.ControllerInfo"/> class.
+            </summary>
+            <param name="callsign">The controller's callsign.</param>
+            <param name="frequency">The controller's primary frequency, in Hz.</param>
+            <param name="latitude">The controller's latitude.</param>
+            <param name="longitude">The controller's longitude.</param>
+        </member>
+    </members>
+</doc>
