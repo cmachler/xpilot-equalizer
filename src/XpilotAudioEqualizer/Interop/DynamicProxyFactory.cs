@@ -16,19 +16,36 @@ internal static class DynamicProxyFactory
         var asm = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
         Module = asm.DefineDynamicModule("RuntimeProxies");
 
-        // Synthesize InternalsVisibleTo access so the emitted IL can implement
-        // internal AFV/xPilot interfaces at runtime.
+        // ISampleSource/SourceStatus are internal to AFV.Sdk.Net. The runtime honors
+        // IgnoresAccessChecksTo on dynamic assemblies; InternalsVisibleTo grants the
+        // opposite direction and does not help here.
         try
         {
-            var ivaCtor = typeof(System.Runtime.CompilerServices.InternalsVisibleToAttribute)
-                .GetConstructor([typeof(string)])!;
-            var ivaBuilder = new CustomAttributeBuilder(ivaCtor, ["AFV.Sdk.Net"]);
-            asm.SetCustomAttribute(ivaBuilder);
+            var attrType = DefineIgnoresAccessChecksToAttribute();
+            asm.SetCustomAttribute(new CustomAttributeBuilder(
+                attrType.GetConstructor([typeof(string)])!, ["AFV.Sdk.Net"]));
         }
         catch
         {
-            // Best-effort; interface impl does not strictly require it.
+            // Best-effort; proxy creation reports its own failure.
         }
+    }
+
+    private static Type DefineIgnoresAccessChecksToAttribute()
+    {
+        var tb = Module.DefineType("System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute",
+            TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Class, typeof(Attribute));
+        var nameField = tb.DefineField("_name", typeof(string), FieldAttributes.Private);
+        var ctor = tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(string)]);
+        var il = ctor.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Call, typeof(Attribute).GetConstructor(
+            BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null)!);
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Ldarg_1);
+        il.Emit(OpCodes.Stfld, nameField);
+        il.Emit(OpCodes.Ret);
+        return tb.CreateType()!;
     }
 
     public static bool IsAvailable
@@ -61,20 +78,21 @@ internal static class DynamicProxyFactory
     {
         var sampleSourceIface = FindType("AFV.Sdk.Net.Core.Audio.Abstractions.ISampleSource")
             ?? FindType("AFV.Sdk.Net.src.Core.Audio.Abstractions.ISampleSource");
-        var sourceStatusType = FindType("AFV.Sdk.Net.Core.Audio.Abstractions.SourceStatus")
-            ?? FindType("AFV.Sdk.Net.src.Core.Audio.Abstractions.SourceStatus");
-        if (sampleSourceIface is null || sourceStatusType is null)
+        if (sampleSourceIface is null)
         {
-            throw new InvalidOperationException("ISampleSource/SourceStatus not found in loaded AFV.Sdk.Net.");
+            throw new InvalidOperationException("ISampleSource not found in loaded AFV.Sdk.Net.");
         }
         var getFrame = sampleSourceIface.GetMethod("GetAudioFrame")!;
+        // SourceStatus is AFV.Sdk.Net.Domain.Audio.SourceStatus; read it from the
+        // method signature instead of guessing namespaces.
+        var sourceStatusType = getFrame.ReturnType;
 
         var tb = Module.DefineType("SampleSourceInterceptor",
             TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Class);
         tb.AddInterfaceImplementation(sampleSourceIface);
-        tb.DefineField("Inner", typeof(object), FieldAttributes.Public);
-        tb.DefineField("Processor", typeof(SpanAction<float, object>), FieldAttributes.Public);
-        tb.DefineField("State", typeof(object), FieldAttributes.Public);
+        var innerField = tb.DefineField("Inner", typeof(object), FieldAttributes.Public);
+        var procField = tb.DefineField("Processor", typeof(SpanAction<float, object>), FieldAttributes.Public);
+        var stateField = tb.DefineField("State", typeof(object), FieldAttributes.Public);
         tb.DefineDefaultConstructor(MethodAttributes.Public);
 
         var mb = tb.DefineMethod(getFrame.Name,
@@ -82,9 +100,6 @@ internal static class DynamicProxyFactory
             getFrame.ReturnType,
             [typeof(Span<float>)]);
         var il = mb.GetILGenerator();
-        var innerField = tb.GetField("Inner")!;
-        var procField = tb.GetField("Processor")!;
-        var stateField = tb.GetField("State")!;
 
         // object inner = this.Inner; processor fields...
         var innerLocal = il.DeclareLocal(typeof(object));
@@ -136,8 +151,8 @@ internal static class DynamicProxyFactory
         var tb = Module.DefineType("DotCommandInterceptor",
             TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Class);
         tb.AddInterfaceImplementation(dotCmdIface);
-        tb.DefineField("Handler", handlerType, FieldAttributes.Public);
-        tb.DefineField("State", typeof(object), FieldAttributes.Public);
+        var handlerField = tb.DefineField("Handler", handlerType, FieldAttributes.Public);
+        var stateField = tb.DefineField("State", typeof(object), FieldAttributes.Public);
         tb.DefineDefaultConstructor(MethodAttributes.Public);
 
         var paramTypes = Array.ConvertAll(process.GetParameters(), p => p.ParameterType);
@@ -149,11 +164,11 @@ internal static class DynamicProxyFactory
         mb.DefineParameter(2, ParameterAttributes.HasDefault | ParameterAttributes.Optional, "resultHandler");
         var il = mb.GetILGenerator();
         il.Emit(OpCodes.Ldarg_0);
-        il.Emit(OpCodes.Ldfld, tb.GetField("Handler")!);
+        il.Emit(OpCodes.Ldfld, handlerField);
         il.Emit(OpCodes.Ldarg_1);
         il.Emit(OpCodes.Ldarg_2);
         il.Emit(OpCodes.Ldarg_0);
-        il.Emit(OpCodes.Ldfld, tb.GetField("State")!);
+        il.Emit(OpCodes.Ldfld, stateField);
         il.Emit(OpCodes.Callvirt, handlerType.GetMethod("Invoke")!);
         il.Emit(OpCodes.Ret);
 

@@ -3,16 +3,16 @@ using System.Text.Json.Serialization;
 
 namespace XpilotAudioEqualizer.Config;
 
+[JsonSourceGenerationOptions(
+    WriteIndented = true,
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+    PropertyNameCaseInsensitive = true,
+    DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
+[JsonSerializable(typeof(NormalizerSettings))]
+internal partial class NormalizerJsonContext : JsonSerializerContext;
+
 public sealed class ConfigStore : IDisposable
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-    };
-
     private readonly object _sync = new();
     private readonly string _filePath;
     private readonly FileSystemWatcher? _watcher;
@@ -51,10 +51,12 @@ public sealed class ConfigStore : IDisposable
             {
                 _watcher = new FileSystemWatcher(watchDir, Path.GetFileName(_filePath))
                 {
-                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName,
                     EnableRaisingEvents = true,
                 };
                 _watcher.Changed += OnFileChanged;
+                _watcher.Created += OnFileChanged;
+                _watcher.Renamed += OnFileChanged;
             }
         }
         catch
@@ -91,7 +93,7 @@ public sealed class ConfigStore : IDisposable
                 return;
             }
             var json = File.ReadAllText(_filePath);
-            var parsed = JsonSerializer.Deserialize<NormalizerSettings>(json, JsonOptions);
+            var parsed = JsonSerializer.Deserialize(json, NormalizerJsonContext.Default.NormalizerSettings);
             Volatile.Write(ref _current, (parsed ?? new NormalizerSettings()).Clamp());
         }
         catch
@@ -114,7 +116,7 @@ public sealed class ConfigStore : IDisposable
             try { json = File.ReadAllText(_filePath); }
             catch { return; }
             NormalizerSettings? parsed;
-            try { parsed = JsonSerializer.Deserialize<NormalizerSettings>(json, JsonOptions); }
+            try { parsed = JsonSerializer.Deserialize(json, NormalizerJsonContext.Default.NormalizerSettings); }
             catch { return; }
             if (parsed is null)
             {
@@ -154,11 +156,11 @@ public sealed class ConfigStore : IDisposable
 
     private void WriteFile(NormalizerSettings settings)
     {
-        Volatile.Write(ref _lastSelfWriteTicks, DateTime.UtcNow.Ticks);
-        var json = JsonSerializer.Serialize(settings, JsonOptions);
+        var json = JsonSerializer.Serialize(settings, NormalizerJsonContext.Default.NormalizerSettings);
         var tmp = _filePath + ".tmp";
         File.WriteAllText(tmp, json);
         File.Move(tmp, _filePath, overwrite: true);
+        Volatile.Write(ref _lastSelfWriteTicks, DateTime.UtcNow.Ticks);
     }
 
     private static bool SettingsEqual(NormalizerSettings a, NormalizerSettings b) =>

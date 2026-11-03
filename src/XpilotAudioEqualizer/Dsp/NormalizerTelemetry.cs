@@ -2,11 +2,13 @@ namespace XpilotAudioEqualizer.Dsp;
 
 public sealed class NormalizerTelemetry
 {
-    public float InputRmsDb;
-    public float OutputRmsDb;
+    public float InputRmsDb = float.NegativeInfinity;
+    public float OutputRmsDb = float.NegativeInfinity;
     public float CurrentGainDb;
     public bool IsGateOpen;
     public long LastActiveTimestampTicks;
+
+    public bool HasEverBeenWritten => Volatile.Read(ref LastActiveTimestampTicks) != 0;
 
     public void Write(float inputRmsDb, float outputRmsDb, float currentGainDb, bool gateOpen, long timestampTicks)
     {

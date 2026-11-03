@@ -69,14 +69,48 @@ public sealed class MasterAudioProcessor
         }
     }
 
-    public (float InputRmsDb, float OutputRmsDb, float CurrentGainDb, bool IsGateOpen) GetAggregateTelemetry(bool headset)
+    /// <summary>
+    /// Aggregate across the active bus. Before the fix this used MathF.Max over
+    /// all four channels; inactive stereo-right DSPs sit at 0.0 which pins the
+    /// meters at 0 dBFS and masks attenuation. Now only channels with a
+    /// timestamp are aggregated, and gain keeps its sign (loudest abs wins).
+    /// </summary>
+    public (float InputRmsDb, float OutputRmsDb, float CurrentGainDb, bool IsGateOpen) GetAggregateTelemetry(bool? headset = null)
     {
-        var a = (headset ? _headsetLeft : _speakerLeft).Telemetry.Read();
-        var b = (headset ? _headsetRight : _speakerRight).Telemetry.Read();
-        return (
-            MathF.Max(a.InputRmsDb, b.InputRmsDb),
-            MathF.Max(a.OutputRmsDb, b.OutputRmsDb),
-            MathF.Max(a.CurrentGainDb, b.CurrentGainDb),
-            a.IsGateOpen || b.IsGateOpen);
+        var channels = new[]
+        {
+            (headset: true, T: _headsetLeft.Telemetry.Read()),
+            (headset: true, T: _headsetRight.Telemetry.Read()),
+            (headset: false, T: _speakerLeft.Telemetry.Read()),
+            (headset: false, T: _speakerRight.Telemetry.Read()),
+        };
+        float inDb = float.NegativeInfinity;
+        float outDb = float.NegativeInfinity;
+        float gainDb = 0f;
+        float maxAbsGain = -1f;
+        bool gateOpen = false;
+        bool any = false;
+        foreach (var (isHeadset, t) in channels)
+        {
+            if (headset.HasValue && isHeadset != headset.Value)
+            {
+                continue;
+            }
+            if (t.LastActiveTimestampTicks == 0)
+            {
+                continue;
+            }
+            any = true;
+            inDb = MathF.Max(inDb, t.InputRmsDb);
+            outDb = MathF.Max(outDb, t.OutputRmsDb);
+            float abs = MathF.Abs(t.CurrentGainDb);
+            if (abs > maxAbsGain)
+            {
+                maxAbsGain = abs;
+                gainDb = t.CurrentGainDb;
+            }
+            gateOpen |= t.IsGateOpen;
+        }
+        return any ? (inDb, outDb, gainDb, gateOpen) : (float.NegativeInfinity, float.NegativeInfinity, 0f, false);
     }
 }

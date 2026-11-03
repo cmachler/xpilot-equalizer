@@ -50,48 +50,69 @@ public sealed class AudioEqualizerPlugin : IPlugin
         catch { }
     }
 
-    private Action ShowWindow() => () =>
+    private Action ShowWindow() => () => PostToUiThread(ShowWindowCore);
+
+    private Action HideWindow() => () =>
+    {
+        try { PostToUiThread(HideWindowCore); }
+        catch { }
+    };
+
+    private void PostToUiThread(Action action)
     {
         try
         {
             var dispatcherType = FindDispatcherType();
             if (dispatcherType is not null)
             {
-                var uiThread = dispatcherType.GetProperty("UIThread")?.GetValue(null);
-                var post = uiThread?.GetType().GetMethod("Post", [typeof(Action)]);
-                if (post is not null)
+                var uiThreadProp = dispatcherType.GetProperty("UIThread",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                var uiThread = uiThreadProp?.GetValue(null);
+                if (uiThread is not null)
                 {
-                    post.Invoke(uiThread, [new Action(ShowWindowCore)]);
-                    return;
+                    // Dispatcher.Post(Action, DispatcherPriority = default) has 2 parameters
+                    // in metadata; request both overload shapes.
+                    var post = uiThread.GetType().GetMethod("Post", [typeof(Action), typeof(int)])
+                        ?? FindPostMethod(uiThread.GetType());
+                    if (post is not null)
+                    {
+                        var args = post.GetParameters();
+                        object?[] invokeArgs = args.Length == 1
+                            ? [action]
+                            : [action, DefaultPriorityValue(args[1].ParameterType)];
+                        post.Invoke(uiThread, invokeArgs);
+                        return;
+                    }
                 }
             }
-            ShowWindowCore();
+            action();
         }
         catch
         {
             _broker?.PostDebugMessage("[AudioNormalizer] Cannot open settings window on this Avalonia version; use .eq CLI commands.");
         }
-    };
+    }
 
-    private Action HideWindow() => () =>
+    private static System.Reflection.MethodInfo? FindPostMethod(Type uiThreadType)
     {
-        try
+        foreach (var m in uiThreadType.GetMethods(
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
         {
-            var dispatcherType = FindDispatcherType();
-            if (dispatcherType is not null)
+            if (m.Name != "Post")
             {
-                var uiThread = dispatcherType.GetProperty("UIThread")?.GetValue(null);
-                var post = uiThread?.GetType().GetMethod("Post", [typeof(Action)]);
-                if (post is not null)
-                {
-                    post.Invoke(uiThread, [new Action(HideWindowCore)]);
-                    return;
-                }
+                continue;
             }
-            HideWindowCore();
+            var ps = m.GetParameters();
+            if (ps.Length == 2 && ps[0].ParameterType == typeof(Action))
+            {
+                return m;
+            }
         }
-        catch { }
-    };
+        return null;
+    }
+
+    private static object? DefaultPriorityValue(Type priorityType) =>
+        priorityType.IsValueType ? Activator.CreateInstance(priorityType) : null;
 
     private void ShowWindowCore()
     {

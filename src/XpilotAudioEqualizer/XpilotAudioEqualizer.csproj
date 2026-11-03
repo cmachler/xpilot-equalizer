@@ -12,6 +12,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="XpilotAudioEqualizer.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../xPilot.PluginSdk/xPilot.PluginSdk.csproj">
       <Private>false</Private>
       <ExcludeAssets>runtime</ExcludeAssets>

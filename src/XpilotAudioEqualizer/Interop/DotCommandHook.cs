@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Globalization;
 using System.Reflection;
 using Vatsim.Xpilot.PluginSdk;
 using XpilotAudioEqualizer.Config;
@@ -7,6 +9,9 @@ namespace XpilotAudioEqualizer.Interop;
 
 internal sealed class DotCommandHook : IDisposable
 {
+    private const BindingFlags AnyInstance =
+        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy;
+
     private readonly IBroker _broker;
     private readonly ConfigStore _config;
     private readonly MasterAudioProcessor _processor;
@@ -15,8 +20,8 @@ internal sealed class DotCommandHook : IDisposable
     private bool _disposed;
 
     private object? _originalDotCommandProcessor;
+    private MethodInfo? _originalOnXplaneDotCommand;
     private object? _proxy;
-    private object? _xplaneSubscription;
     private Delegate? _xplaneHandler;
     private IDisposable? _eventBusXplaneSub;
 
@@ -88,13 +93,16 @@ internal sealed class DotCommandHook : IDisposable
             }
             case "target":
             {
-                if (parts.Length < 2 || !double.TryParse(parts[1], out var db))
+                if (parts.Length < 2 || !double.TryParse(parts[1],
+                        NumberStyles.Float | NumberStyles.AllowThousands,
+                        CultureInfo.InvariantCulture, out var db))
                 {
                     _broker.PostDebugMessage("[AudioNormalizer] Usage: .eq target <-30 .. -6> (dBFS)");
                     break;
                 }
                 var next = _config.Update(s => s with { TargetDbFs = db, PresetName = "Custom" });
-                _broker.PostDebugMessage($"[AudioNormalizer] Target loudness {next.TargetDbFs:0.0} dBFS.");
+                _broker.PostDebugMessage(string.Format(CultureInfo.InvariantCulture,
+                    "[AudioNormalizer] Target loudness {0:0.0} dBFS.", next.TargetDbFs));
                 break;
             }
             case "preset":
@@ -127,10 +135,12 @@ internal sealed class DotCommandHook : IDisposable
             case "status":
             {
                 var s = _config.Current;
-                var t = _processor.GetAggregateTelemetry(headset: true);
-                _broker.PostDebugMessage(
-                    $"[AudioNormalizer] {(s.Enabled ? "ON" : "OFF")} preset={s.PresetName} target={s.TargetDbFs:0.0}dBFS " +
-                    $"boost={s.MaxBoostDb:0.0}dB cut={s.MaxCutDb:0.0}dB ratio={s.CompressionRatio:0.0}:1 gain={t.CurrentGainDb:0.0}dB");
+                var t = _processor.GetAggregateTelemetry();
+                _broker.PostDebugMessage(string.Format(CultureInfo.InvariantCulture,
+                    "[AudioNormalizer] {0} preset={1} target={2:0.0}dBFS " +
+                    "boost={3:0.0}dB cut={4:0.0}dB ratio={5:0.0}:1 gain={6:0.0}dB",
+                    s.Enabled ? "ON" : "OFF", s.PresetName, s.TargetDbFs,
+                    s.MaxBoostDb, s.MaxCutDb, s.CompressionRatio, t.CurrentGainDb));
                 break;
             }
             case "reset":
@@ -174,6 +184,8 @@ internal sealed class DotCommandHook : IDisposable
     private bool InstallUiDotCommandProcessor()
     {
         // Path 1: MainTabViewModel._dotCommandProcessor (owns UI command routing).
+        // MainTabViewModel is constructed before plugins load, so replacing this
+        // field is what actually reroutes UI dot commands.
         var mainTab = FindMainTabViewModel();
         FieldInfo? vmField = null;
         if (mainTab is not null)
@@ -185,7 +197,8 @@ internal sealed class DotCommandHook : IDisposable
             }
         }
 
-        // Path 2: ServiceProvider._IDotCommandProcessor singleton.
+        // Path 2: ServiceProvider._IDotCommandProcessor singleton (covers any
+        // MainTabViewModel constructed after plugin init).
         var serviceProvider = FindServiceProvider();
         FieldInfo? spField = null;
         if (serviceProvider is not null)
@@ -222,28 +235,25 @@ internal sealed class DotCommandHook : IDisposable
     {
         try
         {
-            var appType = FindType("Vatsim.Xpilot.App");
-            var currentProp = appType?.GetProperty("Current", BindingFlags.Public | BindingFlags.Static);
-            var app = currentProp?.GetValue(null);
-            var lifetimeProp = app?.GetType().GetProperty("ApplicationLifetime");
-            var lifetime = lifetimeProp?.GetValue(app);
-            var mainWindowProp = lifetime?.GetType().GetProperty("MainWindow");
-            var mainWindow = mainWindowProp?.GetValue(lifetime);
+            // App.Current (static on Avalonia.Application base) -> ApplicationLifetime ->
+            // MainWindow (Vatsim.Xpilot.Ui.Views.MainWindow) -> [field] MessagesAreaHost
+            // (ContentPresenter) -> Content (MessagesAreaContent) -> DataContext
+            // (MessagesAreaViewModel) -> [field] _mainTabViewModel.
+            var app = GetAppCurrent();
+            if (app is null)
+            {
+                return null;
+            }
+            var lifetime = GetPropertyValue(app, "ApplicationLifetime");
+            var mainWindow = GetPropertyValue(lifetime, "MainWindow");
             if (mainWindow is null)
             {
                 return null;
             }
-            var contentProp = mainWindow.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .FirstOrDefault(p => p.Name is "Messages" or "MessagesAreaControl" or "Content");
-            var messagesArea = contentProp?.GetValue(mainWindow);
-            var dcProp = messagesArea?.GetType().GetProperty("DataContext");
-            var messagesVm = dcProp?.GetValue(messagesArea);
-            if (messagesVm is null)
-            {
-                // Fall back: MainWindow.DataContext -> MainWindowViewModel -> Messages view model.
-                var mainDc = mainWindow.GetType().GetProperty("DataContext")?.GetValue(mainWindow);
-                messagesVm = mainDc;
-            }
+            var host = GetFieldValue(mainWindow, "MessagesAreaHost");
+            var content = GetPropertyValue(host, "Content") ?? host;
+            var messagesVm = GetPropertyValue(content, "DataContext")
+                ?? GetPropertyValue(mainWindow, "DataContext");
             if (messagesVm is null)
             {
                 return null;
@@ -261,8 +271,8 @@ internal sealed class DotCommandHook : IDisposable
                 return messagesVm;
             }
             // Scan Tabs collection for MainTabViewModel.
-            var tabsProp = messagesVm.GetType().GetProperty("Tabs");
-            if (tabsProp?.GetValue(messagesVm) is System.Collections.IEnumerable tabs)
+            var tabsProp = messagesVm.GetType().GetProperty("Tabs", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (tabsProp?.GetValue(messagesVm) is IEnumerable tabs)
             {
                 foreach (var t in tabs)
                 {
@@ -280,12 +290,39 @@ internal sealed class DotCommandHook : IDisposable
         }
     }
 
-    private static object? FindServiceProvider()
+    private static object? GetAppCurrent()
     {
         try
         {
             var appType = FindType("Vatsim.Xpilot.App");
-            // (App._serviceProvider lookup handled below via ServiceProvider.Instance.)
+            // Current is declared on the Avalonia.Application base class.
+            var currentProp = appType?.GetProperty("Current",
+                BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+            return currentProp?.GetValue(null);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static object? FindServiceProvider()
+    {
+        try
+        {
+            // Primary: App.Current._serviceProvider (Vatsim.Xpilot.App, private instance field).
+            var app = GetAppCurrent();
+            if (app is not null)
+            {
+                var f = app.GetType().GetField("_serviceProvider", BindingFlags.NonPublic | BindingFlags.Instance);
+                var sp = f?.GetValue(app);
+                if (sp is not null)
+                {
+                    return sp;
+                }
+            }
+            // Fallback: scan loaded assemblies for Vatsim.Xpilot.Container.ServiceProvider
+            // (Jab-generated container has no static Instance property).
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
             {
                 Type? spType = null;
@@ -302,15 +339,6 @@ internal sealed class DotCommandHook : IDisposable
                     return inst;
                 }
             }
-            // Instance on App object.
-            var currentProp = appType?.GetProperty("Current", BindingFlags.Public | BindingFlags.Static);
-            var app = currentProp?.GetValue(null);
-            if (app is not null)
-            {
-                var f = app.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
-                    .FirstOrDefault(f => f.FieldType.Name.Contains("ServiceProvider", StringComparison.Ordinal));
-                return f?.GetValue(app);
-            }
             return null;
         }
         catch
@@ -323,28 +351,33 @@ internal sealed class DotCommandHook : IDisposable
     {
         try
         {
-            var busType = FindType("Vatsim.Xpilot.Events.EventBus");
+            var busType = FindType("Vatsim.Xpilot.Events.EventBus.EventBus");
             var instanceProp = busType?.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
             var bus = instanceProp?.GetValue(null);
             var cmdType = FindType("Vatsim.Xpilot.Events.ProcessXplaneDotCommand");
-            if (bus is null || cmdType is null)
+            if (bus is null || cmdType is null || busType is null)
             {
                 return;
             }
 
-            // Dispose the original DotCommandProcessor subscription so .eq from X-Plane
-            // is not consumed as "Unknown command" before our handler runs.
+            // Cache the original private handler so non-.eq X-Plane commands keep
+            // their exact original behavior after we take over the subscription.
             try
             {
+                _originalOnXplaneDotCommand = _originalDotCommandProcessor?.GetType()
+                    .GetMethod("OnProcessXplaneDotCommand", BindingFlags.NonPublic | BindingFlags.Instance);
                 var subField = _originalDotCommandProcessor?.GetType()
                     .GetField("_processXplaneDotCommandSubscription", BindingFlags.NonPublic | BindingFlags.Instance);
-                _xplaneSubscription = subField?.GetValue(_originalDotCommandProcessor);
+                // Dispose immediately: the original subscribed first, so leaving it
+                // installed would publish "Unknown command: .eq" before our handler
+                // ever runs. Non-.eq commands are forwarded in OnXplaneDotCommand.
+                (subField?.GetValue(_originalDotCommandProcessor) as IDisposable)?.Dispose();
             }
             catch { }
 
             Action<object> handler = OnXplaneDotCommand;
             _xplaneHandler = handler;
-            var subscribe = busType!.GetMethod("Subscribe", [typeof(Type), typeof(Action<object>)]);
+            var subscribe = busType.GetMethod("Subscribe", [typeof(Type), typeof(Action<object>)]);
             _eventBusXplaneSub = subscribe?.Invoke(bus, [cmdType, handler]) as IDisposable;
         }
         catch
@@ -362,14 +395,47 @@ internal sealed class DotCommandHook : IDisposable
             if (!command.Equals(".eq", StringComparison.OrdinalIgnoreCase) &&
                 !command.StartsWith(".eq ", StringComparison.OrdinalIgnoreCase))
             {
+                // Preserve original behavior for every non-.eq X-Plane command
+                // (dot commands via ProcessInternal, plain text via RadioMessageSent).
+                try { _originalOnXplaneDotCommand?.Invoke(_originalDotCommandProcessor, [msg]); } catch { }
                 return;
             }
             _ = HandleCommand(command, null, null);
-            // Swallow: dispose the original subscription lazily on first .eq so the
-            // original "Unknown command" error is never published for .eq.
-            try { (_xplaneSubscription as IDisposable)?.Dispose(); _xplaneSubscription = null; } catch { }
         }
         catch { }
+    }
+
+    private static object? GetPropertyValue(object? target, string name)
+    {
+        if (target is null)
+        {
+            return null;
+        }
+        try
+        {
+            return target.GetType().GetProperty(name, AnyInstance)?.GetValue(target);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static object? GetFieldValue(object? target, string name)
+    {
+        if (target is null)
+        {
+            return null;
+        }
+        try
+        {
+            return target.GetType().GetField(name,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(target);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static Type? FindType(string fullName)
@@ -396,6 +462,25 @@ internal sealed class DotCommandHook : IDisposable
         try { (_eventBusXplaneSub as IDisposable)?.Dispose(); } catch { }
         try
         {
+            // Re-subscribe the original X-Plane dot-command handler so X-Plane
+            // text routing keeps working after the plugin unloads.
+            if (_originalDotCommandProcessor is not null && _originalOnXplaneDotCommand is not null)
+            {
+                var busType = FindType("Vatsim.Xpilot.Events.EventBus.EventBus");
+                var bus = busType?.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+                var cmdType = FindType("Vatsim.Xpilot.Events.ProcessXplaneDotCommand");
+                var subscribe = busType?.GetMethod("Subscribe", [typeof(Type), typeof(Action<object>)]);
+                if (bus is not null && cmdType is not null && subscribe is not null)
+                {
+                    var original = _originalDotCommandProcessor;
+                    var method = _originalOnXplaneDotCommand;
+                    Action<object> restore = msg =>
+                    {
+                        try { method.Invoke(original, [msg]); } catch { }
+                    };
+                    try { subscribe.Invoke(bus, [cmdType, restore]); } catch { }
+                }
+            }
             // Best-effort restore of original processor.
             var mainTab = FindMainTabViewModel();
             var vmField = mainTab?.GetType().GetField("_dotCommandProcessor", BindingFlags.NonPublic | BindingFlags.Instance);

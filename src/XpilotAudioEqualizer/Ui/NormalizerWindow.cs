@@ -127,8 +127,11 @@ internal sealed class NormalizerWindow : Window
             Content = "Enable Audio Normalizer",
             Foreground = new SolidColorBrush(Fg),
         };
-        _enabledBox.IsCheckedChanged += (_, _) =>
+        // ToggleButton.IsCheckedChanged was trimmed out of xPilot's Avalonia build;
+        // PropertyChanged on ToggleButton.IsCheckedProperty survives trimming.
+        _enabledBox.PropertyChanged += (_, e) =>
         {
+            if (e.Property != Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty) return;
             if (_syncing) return;
             _config.Update(s => s with { Enabled = _enabledBox.IsChecked == true });
         };
@@ -146,8 +149,11 @@ internal sealed class NormalizerWindow : Window
             ItemsSource = new List<string>(NormalizerPresets.Names),
             MinWidth = 220,
         };
-        _presetCombo.SelectionChanged += (_, _) =>
+        // SelectingItemsControl.SelectionChanged is trimmed from xPilot's build;
+        // PropertyChanged on SelectedItemProperty survives trimming.
+        _presetCombo.PropertyChanged += (_, e) =>
         {
+            if (e.Property != Avalonia.Controls.Primitives.SelectingItemsControl.SelectedItemProperty) return;
             if (_syncing) return;
             if (_presetCombo.SelectedItem is string name && NormalizerPresets.TryGet(name, out var preset))
             {
@@ -260,15 +266,18 @@ internal sealed class NormalizerWindow : Window
             TickFrequency = (max - min) / 100.0,
         };
         slider.Tag = (get, set, value, format);
-        slider.ValueChanged += (_, _) =>
+        // RangeBase.ValueChanged was trimmed out of xPilot's Avalonia build;
+        // PropertyChanged on RangeBase.ValueProperty survives trimming.
+        slider.PropertyChanged += (_, e) =>
         {
+            if (e.Property != Avalonia.Controls.Primitives.RangeBase.ValueProperty) return;
             if (_syncing || slider.Tag is not (Func<NormalizerSettings, double> g,
                     Func<NormalizerSettings, double, NormalizerSettings> st,
                     TextBlock vt, string fmt))
             {
                 return;
             }
-            vt.Text = string.Format(fmt, slider.Value);
+            vt.Text = string.Format(System.Globalization.CultureInfo.InvariantCulture, fmt, slider.Value);
             _ = g;
             _config.Update(s => st(s, slider.Value));
         };
@@ -296,7 +305,8 @@ internal sealed class NormalizerWindow : Window
     private static Border CardPanel() => new()
     {
         Background = new SolidColorBrush(Card),
-        CornerRadius = new CornerRadius(8),
+        // Single-arg CornerRadius(double) is trimmed from xPilot's Avalonia build.
+        CornerRadius = new CornerRadius(8, 8, 8, 8),
         Padding = new Thickness(12),
     };
 
@@ -312,6 +322,12 @@ internal sealed class NormalizerWindow : Window
     {
         try
         {
+            if (Dispatcher.UIThread.CheckAccess())
+            {
+                RefreshFromSettings(settings);
+                return;
+            }
+            // Post(Action, DispatcherPriority): 2-arg overload survives trimming.
             Dispatcher.UIThread.Post(() => RefreshFromSettings(settings));
         }
         catch { }
@@ -345,7 +361,7 @@ internal sealed class NormalizerWindow : Window
                         TextBlock vt, string fmt))
                 {
                     slider.Value = g(s);
-                    vt.Text = string.Format(fmt, slider.Value);
+                    vt.Text = string.Format(System.Globalization.CultureInfo.InvariantCulture, fmt, slider.Value);
                 }
             }
         }
@@ -361,15 +377,15 @@ internal sealed class NormalizerWindow : Window
         {
             return;
         }
-        var (inDb, outDb, gainDb, gateOpen) = _processor.GetAggregateTelemetry(headset: true);
+        var (inDb, outDb, gainDb, gateOpen) = _processor.GetAggregateTelemetry();
         _inBar.Value = ClampBar(inDb, -60, 0);
         _outBar.Value = ClampBar(outDb, -60, 0);
         _gainBar.Value = ClampBar(gainDb, -24, 24);
 
-        _inText.Text = float.IsNegativeInfinity(inDb) ? "SILENT" : $"{inDb:0.0} dBFS";
-        _outText.Text = float.IsNegativeInfinity(outDb) ? "SILENT" : $"{outDb:0.0} dBFS";
+        _inText.Text = float.IsNegativeInfinity(inDb) ? "SILENT" : FormattableString.Invariant($"{inDb:0.0} dBFS");
+        _outText.Text = float.IsNegativeInfinity(outDb) ? "SILENT" : FormattableString.Invariant($"{outDb:0.0} dBFS");
         _gainText.Text = Math.Abs(gainDb) < 0.05 ? "0.0 dB"
-            : gainDb > 0 ? $"+{gainDb:0.0} dB (Boosting)" : $"{gainDb:0.0} dB (Attenuating)";
+            : gainDb > 0 ? FormattableString.Invariant($"+{gainDb:0.0} dB (Boosting)") : FormattableString.Invariant($"{gainDb:0.0} dB (Attenuating)");
         _gateBadge.Text = gateOpen ? "GATE OPEN" : "GATED";
         _gateBadge.Foreground = new SolidColorBrush(gateOpen ? Green : Gray);
     }

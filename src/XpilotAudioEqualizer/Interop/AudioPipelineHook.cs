@@ -177,32 +177,59 @@ internal sealed class AudioPipelineHook : IDisposable
         _broker.NetworkConnected += _networkConnectedHandler;
         _broker.NetworkDisconnected += _networkDisconnectedHandler;
 
-        // AfvClient.VoiceServerConnected / VoiceServerDisconnected -> re-verify.
+        // AfvClient.VoiceServerConnected / VoiceServerDisconnected are generic
+        // EventHandler<TEventArgs>; passing plain EventHandler throws
+        // ArgumentException. Build a compatible EventHandler<T> per event.
         if (_afvClient is not null)
         {
-            var t = _afvClient.GetType();
-            foreach (var (eventName, create) in new[]
-            {
-                ("VoiceServerConnected", (Func<EventHandler>)((() => (_, _) => EnsureInstalled()) )),
-                ("VoiceServerDisconnected", (Func<EventHandler>)((() => (_, _) => EnsureInstalled()) )),
-            })
+            foreach (var eventName in new[] { "VoiceServerConnected", "VoiceServerDisconnected" })
             {
                 try
                 {
-                    var ev = t.GetEvent(eventName, BindingFlags.Public | BindingFlags.Instance);
+                    var ev = _afvClient.GetType().GetEvent(eventName, BindingFlags.Public | BindingFlags.Instance);
                     if (ev is null)
                     {
                         continue;
                     }
-                    var h = create();
-                    ev.AddEventHandler(_afvClient, h);
-                    if (eventName == "VoiceServerConnected") _voiceConnectedHandler = h;
-                    else _voiceDisconnectedHandler = h;
+                    var handler = CreateCompatibleHandler(ev.EventHandlerType!);
+                    if (handler is null)
+                    {
+                        continue;
+                    }
+                    ev.AddEventHandler(_afvClient, handler);
+                    if (eventName == "VoiceServerConnected") _voiceConnectedHandler = handler;
+                    else _voiceDisconnectedHandler = handler;
                 }
                 catch { }
             }
         }
     }
+
+    private Delegate? CreateCompatibleHandler(Type handlerType)
+    {
+        try
+        {
+            // EventHandler<TEventArgs>: bind OnAnyVoiceEvent<TEventArgs>.
+            if (handlerType.IsGenericType && handlerType.GetGenericTypeDefinition() == typeof(EventHandler<>))
+            {
+                var arg = handlerType.GetGenericArguments()[0];
+                var method = typeof(AudioPipelineHook).GetMethod(nameof(OnAnyVoiceEvent),
+                    BindingFlags.NonPublic | BindingFlags.Instance)!;
+                return method.MakeGenericMethod(arg).CreateDelegate(handlerType, this);
+            }
+            if (handlerType == typeof(EventHandler))
+            {
+                return new EventHandler((_, _) => EnsureInstalled());
+            }
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void OnAnyVoiceEvent<T>(object? sender, T e) => EnsureInstalled();
 
     private static object? GetFieldValue(object target, string name)
     {

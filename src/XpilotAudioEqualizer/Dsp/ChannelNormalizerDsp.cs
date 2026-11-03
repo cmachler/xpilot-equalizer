@@ -70,20 +70,25 @@ public sealed class ChannelNormalizerDsp
         if (peak < SilenceThreshold)
         {
             // Digital silence: ease gain back to unity, report silence, skip.
-            _currentGainLinear += (1.0 - _currentGainLinear) * 0.05;
+            double silenceEase = 1.0 - Math.Pow(0.95, 1000.0 * n / SampleRate / 20.0);
+            _currentGainLinear += (1.0 - _currentGainLinear) * silenceEase;
             _gateOpen = false;
             Telemetry.Write(inputRmsDb, float.NegativeInfinity, AudioDb.ToDbF(_currentGainLinear), false, DateTime.UtcNow.Ticks);
             return;
         }
 
         // Stage 2 — adaptive noise floor + hysteresis gate.
+        // Per-frame smoothing is scaled by frame duration so behavior is
+        // invariant to buffer size (nominal frame = 960 samples @ 48 kHz).
+        double frameMs = 1000.0 * n / SampleRate;
+        double frameScale = frameMs / 20.0;
         if (rms < _adaptiveNoiseFloor)
         {
-            _adaptiveNoiseFloor += (rms - _adaptiveNoiseFloor) * 0.20;
+            _adaptiveNoiseFloor += (rms - _adaptiveNoiseFloor) * (1.0 - Math.Pow(0.80, frameScale));
         }
         else
         {
-            _adaptiveNoiseFloor += (rms - _adaptiveNoiseFloor) * 0.0005;
+            _adaptiveNoiseFloor += (rms - _adaptiveNoiseFloor) * (1.0 - Math.Pow(0.9995, frameScale));
         }
         if (_adaptiveNoiseFloor < noiseFloorMin)
         {
@@ -101,8 +106,8 @@ public sealed class ChannelNormalizerDsp
 
         if (_gateOpen)
         {
-            const double rise = 1.0 - 0.20;   // ~15 ms across 20 ms frames
-            const double fall = 1.0 - 0.005;  // ~120 ms across 20 ms frames
+            double rise = 1.0 - Math.Pow(0.20, frameScale);   // ~15 ms across 20 ms frames
+            double fall = 1.0 - Math.Pow(0.005, frameScale);  // ~120 ms across 20 ms frames
             double coeff = rms > _envelopeLinear ? rise : fall;
             _envelopeLinear += (rms - _envelopeLinear) * (1.0 - coeff);
         }
@@ -142,7 +147,11 @@ public sealed class ChannelNormalizerDsp
         double outSumSq = 0;
         for (int i = 0, idx = channelOffset; i < n; i++, idx += stride)
         {
-            double coeff = targetGainLinear < currentGain ? attackCoeff : releaseCoeff;
+            // Gate closed: always ease back toward unity at release rate so a
+            // previously-boosted whisper fades out instead of snapping down at
+            // attack rate. Gate open: attack for downward moves, release for up.
+            double coeff = !_gateOpen ? releaseCoeff
+                : targetGainLinear < currentGain ? attackCoeff : releaseCoeff;
             currentGain += (targetGainLinear - currentGain) * coeff;
             double s = buffer[idx] * currentGain;
             s = SoftLimit(s, ceiling, knee);
