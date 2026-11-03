@@ -1,2 +1,0 @@
-D:\development\x-pilot-equalizer\publish\XpilotAudioEqualizer.dll
-D:\development\x-pilot-equalizer\publish\XpilotAudioEqualizer.pdb
