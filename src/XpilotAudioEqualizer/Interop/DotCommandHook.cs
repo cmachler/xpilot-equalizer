@@ -18,10 +18,17 @@ internal sealed class DotCommandHook : IDisposable
     private readonly Func<Action> _showWindow;
     private readonly Func<Action> _hideWindow;
     private bool _disposed;
-
-    private object? _originalDotCommandProcessor;
+    // The UI path routes through MainTabViewModel.ProcessCommandLine(string).
+    // That method is async void-ish (Task-returning) and invoked from the UI
+    // command pipeline; the clean seam is to wrap the MainTabViewModel's own
+    // command delegate instead of implementing IDotCommandProcessor (whose
+    // 3-arg Process overload shape the trimmed host may not honor for proxies).
+    private object? _mainTabViewModel;
+    private Delegate? _originalCommandDelegate;
+    private MethodInfo? _originalProcessCommandLine;
+    private Func<string, Task>? _forwardToViewModel;
     private MethodInfo? _originalOnXplaneDotCommand;
-    private object? _proxy;
+    private object? _originalDotCommandProcessor;
     private Delegate? _xplaneHandler;
     private IDisposable? _eventBusXplaneSub;
 
@@ -38,9 +45,9 @@ internal sealed class DotCommandHook : IDisposable
     {
         try
         {
-            if (!InstallUiDotCommandProcessor())
+            if (!InstallMainTabWrapper())
             {
-                _broker.PostDebugMessage("[AudioNormalizer] .eq commands unavailable: dot command processor not found.");
+                _broker.PostDebugMessage("[AudioNormalizer] .eq commands unavailable: MainTabViewModel not found.");
                 return false;
             }
             InstallXplaneSubscription();
@@ -53,8 +60,15 @@ internal sealed class DotCommandHook : IDisposable
         }
     }
 
-    public Task HandleCommand(string command, Func<string, Task>? resultHandler, object? state)
+
+    /// <summary>
+    /// Entry point for .eq commands from any path (UI wrapper, X-Plane bus).
+    /// Non-.eq commands forward to the original handler.
+    /// </summary>
+    public Task HandleCommand(string command, Func<string, Task>? resultHandler)
     {
+        try
+        {
         var cmd = (command ?? string.Empty).Trim();
         if (!cmd.Equals(".eq", StringComparison.OrdinalIgnoreCase) &&
             !cmd.StartsWith(".eq ", StringComparison.OrdinalIgnoreCase))
@@ -155,24 +169,33 @@ internal sealed class DotCommandHook : IDisposable
                 break;
         }
         return Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            _broker.PostDebugMessage($"[AudioNormalizer] error: {ex.GetType().Name}: {ex.GetBaseException().Message}");
+            return Task.CompletedTask;
+        }
     }
 
     private Task ForwardToOriginal(string command, Func<string, Task>? resultHandler)
     {
         try
         {
-            if (_originalDotCommandProcessor is null)
+            if (_forwardToViewModel is not null)
             {
-                resultHandler?.Invoke(command);
-                return Task.CompletedTask;
+                return _forwardToViewModel(command);
             }
-            var m = _originalDotCommandProcessor.GetType().GetMethod("Process", BindingFlags.Public | BindingFlags.Instance);
-            if (m is null)
+            if (_originalDotCommandProcessor is not null)
             {
-                return Task.CompletedTask;
+                var m = _originalDotCommandProcessor.GetType().GetMethod("Process", BindingFlags.Public | BindingFlags.Instance);
+                var t = ReflectionInvoke.Invoke(m!, _originalDotCommandProcessor, command, resultHandler);
+                if (t is Task task) return task;
             }
-            var t = m.Invoke(_originalDotCommandProcessor, [command, resultHandler]);
-            return t as Task ?? Task.CompletedTask;
+            if (resultHandler is not null)
+            {
+                return resultHandler(command);
+            }
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
@@ -181,54 +204,105 @@ internal sealed class DotCommandHook : IDisposable
         }
     }
 
-    private bool InstallUiDotCommandProcessor()
+    private bool InstallMainTabWrapper()
     {
-        // Path 1: MainTabViewModel._dotCommandProcessor (owns UI command routing).
-        // MainTabViewModel is constructed before plugins load, so replacing this
-        // field is what actually reroutes UI dot commands.
+        // MainTabViewModel owns UI command routing: ProcessCommandLine(string)
+        // consults its processCommandLineCommand delegate (IAsyncRelayCommand).
+        // Swap that delegate's inner execute with our interceptor; keep the
+        // original so non-.eq commands behave exactly as before. Also capture
+        // the IDotCommandProcessor for the X-Plane + forward path.
         var mainTab = FindMainTabViewModel();
-        FieldInfo? vmField = null;
-        if (mainTab is not null)
-        {
-            vmField = mainTab.GetType().GetField("_dotCommandProcessor", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (vmField is not null)
-            {
-                _originalDotCommandProcessor ??= vmField.GetValue(mainTab);
-            }
-        }
-
-        // Path 2: ServiceProvider._IDotCommandProcessor singleton (covers any
-        // MainTabViewModel constructed after plugin init).
-        var serviceProvider = FindServiceProvider();
-        FieldInfo? spField = null;
-        if (serviceProvider is not null)
-        {
-            spField = serviceProvider.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
-                .FirstOrDefault(f => f.FieldType.Name.Contains("IDotCommandProcessor", StringComparison.Ordinal));
-            if (spField is not null)
-            {
-                _originalDotCommandProcessor ??= spField.GetValue(serviceProvider);
-            }
-        }
-
-        if (_originalDotCommandProcessor is null)
+        if (mainTab is null)
         {
             return false;
         }
+        _mainTabViewModel = mainTab;
+        _originalProcessCommandLine = mainTab.GetType().GetMethod("ProcessCommandLine", BindingFlags.Public | BindingFlags.Instance);
+        if (_originalProcessCommandLine is not null)
+        {
+            var vm = mainTab;
+            var mi = _originalProcessCommandLine;
+            _forwardToViewModel = cmd => (Task)ReflectionInvoke.Invoke(mi, vm, cmd)!;
+        }
 
-        _proxy ??= DynamicProxyFactory.CreateDotCommandProxy(HandleCommand, null);
-
+        // Best-effort: also wrap the IAsyncRelayCommand delegate so Enter-key
+        // routing hits us even if ProcessCommandLine internals change shape.
         try
         {
-            vmField?.SetValue(mainTab, _proxy);
+            var cmdProp = mainTab.GetType().GetProperty("ProcessCommandLineCommand", BindingFlags.Public | BindingFlags.Instance);
+            var relay = cmdProp?.GetValue(mainTab);
+            var executeField = relay?.GetType().GetField("execute", BindingFlags.NonPublic | BindingFlags.Instance);
+            var original = executeField?.GetValue(relay) as Delegate;
+            if (original is not null && relay is not null && executeField is not null)
+            {
+                _originalCommandDelegate = original;
+                var intercept = BuildExecuteInterceptor(original);
+                if (intercept is not null)
+                {
+                    try { executeField.SetValue(relay, intercept); } catch { }
+                }
+            }
+        }
+        catch { }
+
+        CaptureOriginalProcessor(mainTab);
+        return _forwardToViewModel is not null || _originalDotCommandProcessor is not null;
+    }
+
+    private void CaptureOriginalProcessor(object mainTab)
+    {
+        try
+        {
+            var vmField = mainTab.GetType().GetField("_dotCommandProcessor", BindingFlags.NonPublic | BindingFlags.Instance);
+            _originalDotCommandProcessor ??= vmField?.GetValue(mainTab);
         }
         catch { }
         try
         {
-            spField?.SetValue(serviceProvider, _proxy);
+            var serviceProvider = FindServiceProvider();
+            var spField = serviceProvider?.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+                .FirstOrDefault(f => f.FieldType.Name.Contains("IDotCommandProcessor", StringComparison.Ordinal));
+            _originalDotCommandProcessor ??= spField?.GetValue(serviceProvider);
         }
         catch { }
-        return true;
+    }
+
+    private Delegate? BuildExecuteInterceptor(Delegate original)
+    {
+        try
+        {
+            // CommunityToolkit IAsyncRelayCommand<string>.ExecuteAsync is
+            // Func<string, Task>-shaped; build a same-signature wrapper so the
+            // relay accepts it without knowing our type.
+            var invoke = original.GetType().GetMethod("Invoke")!;
+            var ps = invoke.GetParameters();
+            if (ps.Length != 1 || ps[0].ParameterType != typeof(string)) return null;
+            Func<string, Task> wrapper = cmd =>
+            {
+                var trimmed = (cmd ?? string.Empty).Trim();
+                if (trimmed.Equals(".eq", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.StartsWith(".eq ", StringComparison.OrdinalIgnoreCase))
+                {
+                    return HandleCommand(trimmed, null);
+                }
+                // Same path as HandleCommand's forward: the captured
+                // ProcessCommandLine delegate. Never DynamicInvoke — that API
+                // is trimmed from the host runtime.
+                if (_forwardToViewModel is not null)
+                {
+                    return _forwardToViewModel(cmd);
+                }
+                return Task.CompletedTask;
+            };
+            var targetType = original.GetType();
+            if (targetType == typeof(Func<string, Task>)) return wrapper;
+            try { return Delegate.CreateDelegate(targetType, wrapper, "Invoke"); }
+            catch { return null; }
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private object? FindMainTabViewModel()
@@ -378,7 +452,7 @@ internal sealed class DotCommandHook : IDisposable
             Action<object> handler = OnXplaneDotCommand;
             _xplaneHandler = handler;
             var subscribe = busType.GetMethod("Subscribe", [typeof(Type), typeof(Action<object>)]);
-            _eventBusXplaneSub = subscribe?.Invoke(bus, [cmdType, handler]) as IDisposable;
+            _eventBusXplaneSub = ReflectionInvoke.Invoke(subscribe!, bus, cmdType, handler) as IDisposable;
         }
         catch
         {
@@ -397,10 +471,10 @@ internal sealed class DotCommandHook : IDisposable
             {
                 // Preserve original behavior for every non-.eq X-Plane command
                 // (dot commands via ProcessInternal, plain text via RadioMessageSent).
-                try { _originalOnXplaneDotCommand?.Invoke(_originalDotCommandProcessor, [msg]); } catch { }
+                try { ReflectionInvoke.Invoke(_originalOnXplaneDotCommand!, _originalDotCommandProcessor, msg); } catch { }
                 return;
             }
-            _ = HandleCommand(command, null, null);
+            _ = HandleCommand(command, null);
         }
         catch { }
     }
@@ -476,25 +550,24 @@ internal sealed class DotCommandHook : IDisposable
                     var method = _originalOnXplaneDotCommand;
                     Action<object> restore = msg =>
                     {
-                        try { method.Invoke(original, [msg]); } catch { }
+                        try { ReflectionInvoke.Invoke(method, original, msg); } catch { }
                     };
                     try { subscribe.Invoke(bus, [cmdType, restore]); } catch { }
                 }
             }
-            // Best-effort restore of original processor.
-            var mainTab = FindMainTabViewModel();
-            var vmField = mainTab?.GetType().GetField("_dotCommandProcessor", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (mainTab is not null && _originalDotCommandProcessor is not null)
+            // Best-effort restore of the wrapped command delegate (same
+            // non-public "execute" field the install patched).
+            try
             {
-                try { vmField?.SetValue(mainTab, _originalDotCommandProcessor); } catch { }
+                if (_mainTabViewModel is not null && _originalCommandDelegate is not null)
+                {
+                    var cmdProp = _mainTabViewModel.GetType().GetProperty("ProcessCommandLineCommand", BindingFlags.Public | BindingFlags.Instance);
+                    var relay = cmdProp?.GetValue(_mainTabViewModel);
+                    var executeField = relay?.GetType().GetField("execute", BindingFlags.NonPublic | BindingFlags.Instance);
+                    try { executeField?.SetValue(relay, _originalCommandDelegate); } catch { }
+                }
             }
-            var sp = FindServiceProvider();
-            var spField = sp?.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
-                .FirstOrDefault(f => f.FieldType.Name.Contains("IDotCommandProcessor", StringComparison.Ordinal));
-            if (sp is not null && _originalDotCommandProcessor is not null)
-            {
-                try { spField?.SetValue(sp, _originalDotCommandProcessor); } catch { }
-            }
+            catch { }
         }
         catch { }
     }

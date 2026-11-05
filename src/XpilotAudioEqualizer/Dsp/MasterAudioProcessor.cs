@@ -1,7 +1,13 @@
-using System.Buffers;
 using XpilotAudioEqualizer.Config;
 
 namespace XpilotAudioEqualizer.Dsp;
+
+/// <summary>
+/// Local SpanAction equivalent. System.Buffers.Binary lives only in the
+/// System.Buffers facade (trimmed from xPilot's bundle); the delegate shape
+/// itself is trivial, so define it here to avoid the dependency.
+/// </summary>
+public delegate void SpanAction<T, TArg>(Span<T> span, TArg arg);
 
 public sealed class MasterAudioProcessor
 {
@@ -90,12 +96,13 @@ public sealed class MasterAudioProcessor
         float maxAbsGain = -1f;
         bool gateOpen = false;
         bool any = false;
-        foreach (var (isHeadset, t) in channels)
+        foreach (var ch in channels)
         {
-            if (headset.HasValue && isHeadset != headset.Value)
+            if (headset.HasValue && ch.headset != headset.Value)
             {
                 continue;
             }
+            var t = ch.T;
             if (t.LastActiveTimestampTicks == 0)
             {
                 continue;

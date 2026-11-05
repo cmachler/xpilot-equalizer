@@ -298,8 +298,8 @@ public sealed class RuntimeInteropSmokeTests
             .SetValue(hook, fakeOriginal);
 
         // Exercise the real routing logic directly (no xPilot assembly needed).
-        await hook.HandleCommand(".eq status", null, null);
-        await hook.HandleCommand(".wx KJFK", null, null);
+        await hook.HandleCommand(".eq status", null);
+        await hook.HandleCommand(".wx KJFK", null);
 
         Assert.Contains(".wx KJFK", forwarded);
         Assert.Contains(broker.Messages, m => m.Contains("AudioNormalizer"));
@@ -309,7 +309,7 @@ public sealed class RuntimeInteropSmokeTests
         if (LoadIntoDefault("xPilot.dll") is not null)
         {
             Func<string, Func<string, Task>?, object?, Task> handler = (cmd, rh, st) =>
-                hook.HandleCommand(cmd, rh, st);
+                hook.HandleCommand(cmd, rh);
             var proxy = DynamicProxyFactory.CreateDotCommandProxy(handler, null);
             Assert.NotNull(proxy);
             var process = proxy!.GetType().GetMethod("Process")!;

@@ -1,4 +1,4 @@
-using System.Buffers;
+using System.Linq;
 using System.Reflection;
 using Vatsim.Xpilot.PluginSdk;
 using XpilotAudioEqualizer.Dsp;
@@ -46,7 +46,7 @@ internal sealed class AudioPipelineHook : IDisposable
         }
         catch (Exception ex)
         {
-            _broker.PostDebugMessage($"[AudioNormalizer] Audio hook failed: {ex.GetType().Name}: {ex.Message}");
+            _broker.PostDebugMessage($"[AudioNormalizer] Audio hook failed: {ex}");
             return false;
         }
     }
@@ -162,16 +162,23 @@ internal sealed class AudioPipelineHook : IDisposable
 
         if (_headsetProxy is not null)
         {
-            setHeadset.Invoke(_audioManager, [_headsetProxy]);
+            headsetField.SetValue(_audioManager, _headsetProxy);
         }
         if (_speakerProxy is not null)
         {
-            setSpeaker.Invoke(_audioManager, [_speakerProxy]);
+            speakerField.SetValue(_audioManager, _speakerProxy);
         }
     }
 
     private void SubscribeReconnect()
     {
+        _networkConnectedHandler = (_, _) => EnsureInstalled();
+        _networkDisconnectedHandler = (_, _) => EnsureInstalled();
+        _broker.NetworkConnected += _networkConnectedHandler;
+        _broker.NetworkDisconnected += _networkDisconnectedHandler;
+        // AfvClient VoiceServer* events use generic EventHandler<T>; their
+        // reflection shapes are trimmed from the host runtime, so skip them.
+        return;
         _networkConnectedHandler = (_, _) => EnsureInstalled();
         _networkDisconnectedHandler = (_, _) => EnsureInstalled();
         _broker.NetworkConnected += _networkConnectedHandler;
@@ -191,7 +198,12 @@ internal sealed class AudioPipelineHook : IDisposable
                     {
                         continue;
                     }
-                    var handler = CreateCompatibleHandler(ev.EventHandlerType!);
+                    var handlerType = ev.GetAddMethod()?.GetParameters().FirstOrDefault()?.ParameterType;
+                    if (handlerType is null)
+                    {
+                        continue;
+                    }
+                    var handler = CreateCompatibleHandler(handlerType);
                     if (handler is null)
                     {
                         continue;
@@ -243,7 +255,7 @@ internal sealed class AudioPipelineHook : IDisposable
         {
             try
             {
-                if (f.FieldType.Name.Contains(typeNameContains, StringComparison.Ordinal))
+                if (f.FieldType.Name.IndexOf(typeNameContains) >= 0)
                 {
                     return f.GetValue(target);
                 }
@@ -255,20 +267,27 @@ internal sealed class AudioPipelineHook : IDisposable
 
     private static FieldInfo? FindFieldByType(Type owner, string fieldTypeName, string? nameHint)
     {
-        FieldInfo? fallback = null;
-        foreach (var f in owner.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance))
+        if (nameHint is not null)
         {
-            if (!f.FieldType.Name.Contains(fieldTypeName, StringComparison.Ordinal))
+            var withoutUnderscore = nameHint;
+            if (withoutUnderscore.Length > 0 && withoutUnderscore[0] == '_')
             {
-                continue;
+                withoutUnderscore = withoutUnderscore.Substring(1);
             }
-            if (nameHint is not null && f.Name.Contains(nameHint.TrimStart('_'), StringComparison.OrdinalIgnoreCase))
+            foreach (var candidate in new[] { nameHint, withoutUnderscore })
             {
-                return f;
+                try
+                {
+                    var f = owner.GetField(candidate, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    if (f is not null)
+                    {
+                        return f;
+                    }
+                }
+                catch { }
             }
-            fallback ??= f;
         }
-        return fallback;
+        return null;
     }
 
     public void Dispose()
@@ -299,10 +318,14 @@ internal sealed class AudioPipelineHook : IDisposable
                 var mgrType = _audioManager.GetType();
                 try
                 {
-                    if (_originalHeadsetSource is not null)
-                        mgrType.GetMethod("SetHeadsetSource")?.Invoke(_audioManager, [_originalHeadsetSource]);
-                    if (_originalSpeakerSource is not null)
-                        mgrType.GetMethod("SetSpeakerSource")?.Invoke(_audioManager, [_originalSpeakerSource]);
+                    var hf = mgrType.GetField("_headsetSource", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
+                        ?? mgrType.GetField("_headset", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    var sf = mgrType.GetField("_speakerSource", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
+                        ?? mgrType.GetField("_speaker", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    if (_originalHeadsetSource is not null && hf is not null)
+                        hf.SetValue(_audioManager, _originalHeadsetSource);
+                    if (_originalSpeakerSource is not null && sf is not null)
+                        sf.SetValue(_audioManager, _originalSpeakerSource);
                 }
                 catch { }
             }

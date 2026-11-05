@@ -1,3 +1,4 @@
+using System.Reflection;
 using Vatsim.Xpilot.PluginSdk;
 using XpilotAudioEqualizer.Config;
 using XpilotAudioEqualizer.Dsp;
@@ -80,8 +81,19 @@ public sealed class AudioEqualizerPlugin : IPlugin
                         object?[] invokeArgs = args.Length == 1
                             ? [action]
                             : [action, DefaultPriorityValue(args[1].ParameterType)];
-                        post.Invoke(uiThread, invokeArgs);
-                        return;
+                        try
+                        {
+                            ReflectionInvoke.Invoke(post, uiThread, invokeArgs);
+                            return;
+                        }
+                        catch
+                        {
+                            // DynamicMethod JIT can't resolve host-framework types
+                            // (e.g. Avalonia DispatcherPriority) from our load
+                            // context. The .eq wrapper already runs on the UI
+                            // thread, so a direct call is correct; a background
+                            // caller degrades gracefully via ShowWindowCore.
+                        }
                     }
                 }
             }
@@ -98,7 +110,7 @@ public sealed class AudioEqualizerPlugin : IPlugin
         foreach (var m in uiThreadType.GetMethods(
             System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
         {
-            if (m.Name != "Post")
+            if (((MemberInfo)m).Name != "Post")
             {
                 continue;
             }

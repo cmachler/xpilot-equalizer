@@ -1,4 +1,4 @@
-using System.Buffers;
+using XpilotAudioEqualizer.Dsp;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -40,7 +40,7 @@ internal static class DynamicProxyFactory
         var il = ctor.GetILGenerator();
         il.Emit(OpCodes.Ldarg_0);
         il.Emit(OpCodes.Call, typeof(Attribute).GetConstructor(
-            BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null)!);
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null)!);
         il.Emit(OpCodes.Ldarg_0);
         il.Emit(OpCodes.Ldarg_1);
         il.Emit(OpCodes.Stfld, nameField);
@@ -88,7 +88,8 @@ internal static class DynamicProxyFactory
         var sourceStatusType = getFrame.ReturnType;
 
         var tb = Module.DefineType("SampleSourceInterceptor",
-            TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Class);
+            TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Class,
+            typeof(object));
         tb.AddInterfaceImplementation(sampleSourceIface);
         var innerField = tb.DefineField("Inner", typeof(object), FieldAttributes.Public);
         var procField = tb.DefineField("Processor", typeof(SpanAction<float, object>), FieldAttributes.Public);
@@ -149,7 +150,8 @@ internal static class DynamicProxyFactory
         var handlerType = typeof(Func<string, Func<string, Task>?, object?, Task>);
 
         var tb = Module.DefineType("DotCommandInterceptor",
-            TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Class);
+            TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Class,
+            typeof(object));
         tb.AddInterfaceImplementation(dotCmdIface);
         var handlerField = tb.DefineField("Handler", handlerType, FieldAttributes.Public);
         var stateField = tb.DefineField("State", typeof(object), FieldAttributes.Public);
