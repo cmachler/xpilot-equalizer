@@ -11,11 +11,12 @@ settings UI, and level meters. Install the MSI; no build tooling required.
 ## Install (users)
 
 1. Download `XpilotAudioEqualizer.msi` from the [latest release](https://github.com/cmachler/xpilot-equalizer/releases/latest).
-2. Install (per-user, no elevation; xPilot closes automatically if running):
+2. Double-click `XpilotAudioEqualizer.msi` (or right-click → Install). The wizard runs
+   per-user and needs no elevation; xPilot closes automatically if running.
+   Optional silent install:
    ```powershell
    msiexec /i XpilotAudioEqualizer.msi /qn
    ```
-   Or run the MSI for the interactive wizard.
 3. Restart xPilot. The debug log should show:
    ```
    xPilot Audio Normalizer 1.0.0 loaded (Target: -18.0 dBFS). Type .eq to open settings.
