@@ -1,5 +1,11 @@
 # xPilot Audio Normalizer
 
+## Download
+
+- Latest release MSI: https://github.com/cmachler/xpilot-equalizer/releases/latest
+- Documentation site: https://cmachler.github.io/xpilot-equalizer/
+- Pages source is deployed from `docs/` on pushes to `main` via GitHub Actions.
+
 Live VATSIM voice normalization. Presets/parameters (checkbox, preset picker,
 8 sliders, `.eq` commands) plus live level meters and gain readout. DSP runs
 on the live headset/speaker audio path via `AudioPipelineHook`; the three
@@ -114,3 +120,10 @@ into `%TEMP%\xpilot-equalizer-smoke` and skip when absent).
 
 For contributors: `AGENTS.md` (agent rules), `docs/ARCHITECTURE.md` (how the
 hooks and DSP actually work).
+
+## CI / Releases
+
+Pushing a tag `vX.Y.Z` (or dispatching the `Build MSI` workflow) builds the MSI on
+`windows-latest` and attaches it to a GitHub Release. Pages deploys on changes under `docs/`.
+
+GitHub Pages source must be set to "GitHub Actions" in repository settings.

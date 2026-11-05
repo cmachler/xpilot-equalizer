@@ -7,7 +7,8 @@
   ensures the WiX v4 CLI is available, and invokes `wix build`.
 #>
 param(
-  [string]$Configuration = "Release"
+  [string]$Configuration = "Release",
+  [string]$Version = "1.0.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -89,7 +90,7 @@ if ($ext -notmatch "WixToolset.UI.wixext") {
 
 # 5. Build MSI.
 Write-Host "Building MSI..."
-& wix build $wxs -d "SourceDir=$stageDir" -o $msi -ext WixToolset.Util.wixext -ext WixToolset.UI.wixext
+& wix build $wxs -d "SourceDir=$stageDir" -d "Version=$Version" -o $msi -ext WixToolset.Util.wixext -ext WixToolset.UI.wixext
 if ($LASTEXITCODE -ne 0) { throw "wix build failed." }
 if (-not (Test-Path $msi)) { throw "MSI not produced: $msi" }
 $size = (Get-Item $msi).Length

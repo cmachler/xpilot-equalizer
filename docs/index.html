@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>xPilot Audio Normalizer</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    h1, h2, h3 { line-height: 1.2; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    pre { background: rgba(127,127,127,.12); padding: .9rem 1rem; border-radius: .5rem; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid rgba(127,127,127,.35); padding: .45rem .6rem; vertical-align: top; }
+    th { text-align: left; }
+    .hero { margin-bottom: 2rem; }
+    .buttons a { display: inline-block; margin-right: .75rem; margin-bottom: .75rem; padding: .6rem 1rem; border-radius: .5rem; text-decoration: none; background: #2563eb; color: #fff; }
+    .buttons a.secondary { background: transparent; color: inherit; border: 1px solid rgba(127,127,127,.45); }
+    .note { padding: .8rem 1rem; border-left: 4px solid #2563eb; background: rgba(37,99,235,.08); border-radius: .25rem; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <h1>xPilot Audio Normalizer</h1>
+    <p>Live VATSIM voice normalization for xPilot. Presets, parameters, <code>.eq</code> commands, settings UI, and live level meters. DSP runs on the live headset/speaker audio path.</p>
+    <div class="buttons">
+      <a href="https://github.com/cmachler/xpilot-equalizer/releases/latest">Download latest MSI</a>
+      <a class="secondary" href="https://github.com/cmachler/xpilot-equalizer">Source code</a>
+      <a class="secondary" href="https://github.com/cmachler/xpilot-equalizer/blob/main/docs/ARCHITECTURE.md">Architecture</a>
+    </div>
+    <p class="note">Per-user install, no elevation. Close xPilot before installing or uninstalling.</p>
+  </header>
+
+  <section>
+    <h2>Install</h2>
+    <ol>
+      <li>Download <code>XpilotAudioEqualizer.msi</code> from the latest release.</li>
+      <li>Run <code>msiexec /i XpilotAudioEqualizer.msi /qn</code> or use the installer wizard.</li>
+      <li>Restart xPilot. The debug log should show <code>xPilot Audio Normalizer 1.0.0 loaded ... Type .eq to open settings.</code></li>
+    </ol>
+    <p>Files land in <code>%LOCALAPPDATA%\org.vatsim.xpilot\Plugins\XpilotAudioEqualizer\</code>.</p>
+  </section>
+
+  <section>
+    <h2>Commands</h2>
+    <table>
+      <thead><tr><th>Command</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>.eq</code> / <code>.eq show</code> / <code>.eq gui</code></td><td>Open settings window</td></tr>
+        <tr><td><code>.eq hide</code> / <code>.eq close</code></td><td>Hide settings window</td></tr>
+        <tr><td><code>.eq on</code> / <code>.eq off</code> / <code>.eq toggle</code></td><td>Arm / disarm normalization</td></tr>
+        <tr><td><code>.eq target &lt;-30..-6&gt;</code></td><td>Set target loudness in dBFS</td></tr>
+        <tr><td><code>.eq preset &lt;balanced|aggressive|gentle|night&gt;</code></td><td>Apply preset</td></tr>
+        <tr><td><code>.eq status</code></td><td>Show armed state, preset, target, boost/cut, ratio</td></tr>
+        <tr><td><code>.eq reset</code></td><td>Reset to Balanced defaults</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Presets</h2>
+    <table>
+      <thead><tr><th>Preset</th><th>Target</th><th>Boost/Cut</th><th>Ratio</th><th>Attack/Release</th><th>Gate open/close</th><th>Ceiling</th></tr></thead>
+      <tbody>
+        <tr><td>Balanced (default)</td><td>-18 dBFS</td><td>18/18 dB</td><td>4.0:1</td><td>10/350 ms</td><td>-42/-47</td><td>-1.0</td></tr>
+        <tr><td>Aggressive Leveler</td><td>-15 dBFS</td><td>22/22 dB</td><td>8.0:1</td><td>5/250 ms</td><td>-40/-45</td><td>-1.0</td></tr>
+        <tr><td>Gentle / Natural</td><td>-20 dBFS</td><td>12/12 dB</td><td>2.5:1</td><td>20/500 ms</td><td>-45/-50</td><td>-1.0</td></tr>
+        <tr><td>Night Mode</td><td>-22 dBFS</td><td>16/24 dB</td><td>6.0:1</td><td>4/300 ms</td><td>-42/-47</td><td>-3.0</td></tr>
+      </tbody>
+    </table>
+    <p>Any slider move or <code>.eq target</code> switches the preset label to <code>Custom</code>.</p>
+  </section>
+
+  <section>
+    <h2>Uninstall</h2>
+    <p>Use Add/Remove Programs, or run:</p>
+    <pre>msiexec /x dist\XpilotAudioEqualizer.msi /qn</pre>
+    <p>A runtime-created <code>normalizer-config.json</code> may remain; delete it manually if desired.</p>
+  </section>
+
+  <section>
+    <h2>Troubleshooting</h2>
+    <table>
+      <thead><tr><th>Symptom</th><th>Cause / fix</th></tr></thead>
+      <tbody>
+        <tr><td>No <code>loaded</code> message</td><td>Plugin folder name must match DLL name; close xPilot before copying; check .NET 10 runtime loads.</td></tr>
+        <tr><td><code>.eq</code> prints <code>Unknown command</code></td><td>Hook did not install; see architecture notes.</td></tr>
+        <tr><td>No audible effect</td><td>Expected until a live audio pipeline hook is installed.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    <p>Contributors: see <a href="https://github.com/cmachler/xpilot-equalizer/blob/main/AGENTS.md">AGENTS.md</a> and <a href="https://github.com/cmachler/xpilot-equalizer/blob/main/docs/ARCHITECTURE.md">Architecture</a>.</p>
+  </footer>
+</body>
+</html>
