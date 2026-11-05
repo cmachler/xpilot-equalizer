@@ -1,0 +1,53 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="xPilot Audio Normalizer"
+          Language="1033"
+          Version="1.0.0"
+          Manufacturer="xPilot Audio Normalizer"
+          UpgradeCode="717aaf53-9dcc-42fd-ad03-8bbb4821fe4b"
+          Scope="perUser">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of xPilot Audio Normalizer is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <Feature Id="MainFeature" Title="xPilot Audio Normalizer" Level="1">
+      <ComponentGroupRef Id="PluginComponents" />
+    </Feature>
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="installer\license.rtf" />
+    <util:CloseApplication Id="CloseXPilot"
+                          CloseMessage="yes"
+                          RebootPrompt="no"
+                          Target="xPilot.exe"
+                          Timeout="30" />
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="OrgDir" Name="org.vatsim.xpilot">
+        <Directory Id="PluginsDir" Name="Plugins">
+          <Directory Id="INSTALLFOLDER" Name="XpilotAudioEqualizer" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="PluginComponents" Directory="INSTALLFOLDER">
+      <Component Id="CmpPluginDll" Guid="*">
+        <File Id="FilePluginDll" Source="$(var.SourceDir)\XpilotAudioEqualizer.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="CmpEmit" Guid="*">
+        <File Id="FileEmit" Source="$(var.SourceDir)\System.Reflection.Emit.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="CmpEmitIL" Guid="*">
+        <File Id="FileEmitIL" Source="$(var.SourceDir)\System.Reflection.Emit.ILGeneration.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="CmpEmitLw" Guid="*">
+        <File Id="FileEmitLw" Source="$(var.SourceDir)\System.Reflection.Emit.Lightweight.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="CmpPrimitives" Guid="*">
+        <File Id="FilePrimitives" Source="$(var.SourceDir)\System.Reflection.Primitives.dll" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

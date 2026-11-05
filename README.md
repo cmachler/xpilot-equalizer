@@ -8,18 +8,42 @@ runtime by `scripts/install-plugin.ps1`.
 
 ## Install
 
+Build the MSI (requires the .NET 10 SDK and the WiX v4 CLI, installed
+automatically by the build script if missing):
+
 ```powershell
-dotnet publish src/XpilotAudioEqualizer/XpilotAudioEqualizer.csproj -c Release -o publish
-powershell -ExecutionPolicy Bypass -File scripts/install-plugin.ps1
+powershell -ExecutionPolicy Bypass -File scripts/build-msi.ps1
 ```
 
-Close xPilot first (DLL lock). Files land in:
+Then install (per-user, no elevation; xPilot is closed automatically if running):
+
+```powershell
+msiexec /i dist\XpilotAudioEqualizer.msi /qn
+```
+
+Files land in:
 
 ```
 %LOCALAPPDATA%\org.vatsim.xpilot\Plugins\XpilotAudioEqualizer\
   XpilotAudioEqualizer.dll
+  System.Reflection.Emit*.dll
   normalizer-config.json   # auto-created on first load
 ```
+
+Silent install: `msiexec /i dist\XpilotAudioEqualizer.msi /qn`
+(no `/qn` for the interactive wizard).
+
+Uninstall via Add/Remove Programs ("xPilot Audio Normalizer"), or:
+
+```powershell
+msiexec /x dist\XpilotAudioEqualizer.msi /qn
+```
+
+A runtime-created `normalizer-config.json` is left behind after uninstall; delete
+it manually if desired.
+
+Developer fallback (no MSI): `scripts/install-plugin.ps1` copies the same files
+from `publish/` / `dist/XpilotAudioEqualizer/`.
 
 Restart xPilot; the debug log should show:
 

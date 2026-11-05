@@ -8,9 +8,18 @@
   Run after: dotnet publish src/XpilotAudioEqualizer/XpilotAudioEqualizer.csproj -c Release -o publish
 #>
 param(
-  [string]$SourceDir = (Join-Path (Split-Path $PSScriptRoot -Parent) "publish"),
+  [string]$SourceDir = "",
   [string]$PluginsRoot = (Join-Path $env:LOCALAPPDATA "org.vatsim.xpilot\Plugins")
 )
+if (-not $SourceDir) {
+  $root = Split-Path $PSScriptRoot -Parent
+  $staged = Join-Path $root "dist\XpilotAudioEqualizer"
+  if (Test-Path (Join-Path $staged "XpilotAudioEqualizer.dll")) {
+    $SourceDir = $staged
+  } else {
+    $SourceDir = Join-Path $root "publish"
+  }
+}
 
 $ErrorActionPreference = "Stop"
 $dll = Join-Path $SourceDir "XpilotAudioEqualizer.dll"
