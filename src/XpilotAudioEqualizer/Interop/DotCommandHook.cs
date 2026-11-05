@@ -290,7 +290,7 @@ internal sealed class DotCommandHook : IDisposable
                 // is trimmed from the host runtime.
                 if (_forwardToViewModel is not null)
                 {
-                    return _forwardToViewModel(cmd);
+                    return _forwardToViewModel(cmd ?? string.Empty);
                 }
                 return Task.CompletedTask;
             };

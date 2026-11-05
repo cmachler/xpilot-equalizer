@@ -20,8 +20,9 @@ internal sealed class AudioPipelineHook : IDisposable
     private object? _speakerProxy;
     private EventHandler<Vatsim.Xpilot.PluginSdk.Events.NetworkConnectedEventArgs>? _networkConnectedHandler;
     private EventHandler? _networkDisconnectedHandler;
-    private Delegate? _voiceConnectedHandler;
-    private Delegate? _voiceDisconnectedHandler;
+    // Voice server handlers are no longer wired (trimmed runtime); retained for compatibility.
+    private Delegate? _voiceConnectedHandler = null;
+    private Delegate? _voiceDisconnectedHandler = null;
     private bool _installed;
 
     public AudioPipelineHook(IBroker broker, MasterAudioProcessor processor)
@@ -179,42 +180,6 @@ internal sealed class AudioPipelineHook : IDisposable
         // AfvClient VoiceServer* events use generic EventHandler<T>; their
         // reflection shapes are trimmed from the host runtime, so skip them.
         return;
-        _networkConnectedHandler = (_, _) => EnsureInstalled();
-        _networkDisconnectedHandler = (_, _) => EnsureInstalled();
-        _broker.NetworkConnected += _networkConnectedHandler;
-        _broker.NetworkDisconnected += _networkDisconnectedHandler;
-
-        // AfvClient.VoiceServerConnected / VoiceServerDisconnected are generic
-        // EventHandler<TEventArgs>; passing plain EventHandler throws
-        // ArgumentException. Build a compatible EventHandler<T> per event.
-        if (_afvClient is not null)
-        {
-            foreach (var eventName in new[] { "VoiceServerConnected", "VoiceServerDisconnected" })
-            {
-                try
-                {
-                    var ev = _afvClient.GetType().GetEvent(eventName, BindingFlags.Public | BindingFlags.Instance);
-                    if (ev is null)
-                    {
-                        continue;
-                    }
-                    var handlerType = ev.GetAddMethod()?.GetParameters().FirstOrDefault()?.ParameterType;
-                    if (handlerType is null)
-                    {
-                        continue;
-                    }
-                    var handler = CreateCompatibleHandler(handlerType);
-                    if (handler is null)
-                    {
-                        continue;
-                    }
-                    ev.AddEventHandler(_afvClient, handler);
-                    if (eventName == "VoiceServerConnected") _voiceConnectedHandler = handler;
-                    else _voiceDisconnectedHandler = handler;
-                }
-                catch { }
-            }
-        }
     }
 
     private Delegate? CreateCompatibleHandler(Type handlerType)
